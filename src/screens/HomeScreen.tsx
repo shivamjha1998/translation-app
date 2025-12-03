@@ -6,7 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
-import { Mic } from 'lucide-react-native';
+import { Mic, Trash2 } from 'lucide-react-native';
 
 import { LanguageToggle } from '../components/LanguageToggle';
 import { TranslationInput } from '../components/TranslationInput';
@@ -16,6 +16,7 @@ import { useTranslation } from '../hooks/useTranslation';
 import { useTextToSpeech } from '../hooks/useTextToSpeech';
 import { useVoiceRecording } from '../hooks/useVoiceRecording';
 import { useTranscription } from '../hooks/useTranscription';
+import { useAppState } from '../hooks/useAppState';
 import { theme } from '../utils/theme';
 
 export const HomeScreen = () => {
@@ -23,25 +24,42 @@ export const HomeScreen = () => {
     const [inputText, setInputText] = useState('');
     const [translatedText, setTranslatedText] = useState('');
 
-    // Hooks
-    const { mutateAsync: translate, isPending: isTranslating, error: translationError } = useTranslation();
+    useAppState(() => {
+        setInputText('');
+        setTranslatedText('');
+    });
+
+    const { mutateAsync: translateFunc, isPending: isTranslating, error: translationError } = useTranslation();
+
     const { playAudio, isLoading: isAudioLoading, error: audioError } = useTextToSpeech();
-    const { startRecording, stopRecording, isRecording } = useVoiceRecording();
-    const { mutate: transcribe, isPending: isTranscribing, error: recordingError, data: transcription } = useTranscription();
 
-    // Effect: Update input when transcription finishes
+    const {
+        startRecording,
+        stopRecording,
+        isRecording,
+        transcription: localTranscription,
+        error: recordingError
+    } = useVoiceRecording();
+
+    const { mutate: transcribe, isPending: isTranscribing, error: transcriptionError, data: transcriptionData } = useTranscription();
+
     useEffect(() => {
-        if (transcription) {
-            setInputText(transcription);
+        if (transcriptionData) {
+            setInputText(transcriptionData);
         }
-    }, [transcription]);
+    }, [transcriptionData]);
 
-    // Handlers
     const handleToggleLanguage = useCallback(() => {
         setSourceLanguage(prev => prev === 'English' ? 'Japanese' : 'English');
         setInputText('');
         setTranslatedText('');
     }, []);
+
+    const handleClear = () => {
+        setInputText('');
+        setTranslatedText('');
+        Keyboard.dismiss();
+    };
 
     const handleTranslate = useCallback(async () => {
         if (!inputText.trim()) return;
@@ -49,17 +67,17 @@ export const HomeScreen = () => {
 
         try {
             const targetLang = sourceLanguage === 'English' ? 'Japanese' : 'English';
-            const result = await translate({ text: inputText, targetLang });
+            const result = await translateFunc({ text: inputText, targetLang });
             setTranslatedText(result);
         } catch (error) {
-            // Error is handled by the hook state
+            console.error(error);
         }
-    }, [inputText, sourceLanguage, translate]);
+    }, [inputText, sourceLanguage, translateFunc]);
 
     const handleMicPress = useCallback(async () => {
         if (isRecording) {
             const uri = await stopRecording();
-            if (uri) {
+            if (uri !== null && uri !== undefined && typeof uri === 'string') {
                 transcribe(uri);
             }
         } else {
@@ -67,7 +85,11 @@ export const HomeScreen = () => {
         }
     }, [isRecording, startRecording, stopRecording, transcribe]);
 
-    const combinedError = translationError?.message || audioError || recordingError?.message;
+    const combinedError =
+        (translationError as Error)?.message ||
+        (audioError as string) ||
+        (recordingError as string) ||
+        (transcriptionError as Error)?.message;
 
     return (
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
@@ -84,7 +106,14 @@ export const HomeScreen = () => {
                         style={styles.keyboardView}
                     >
                         <View style={styles.content}>
-                            <Text style={styles.title}>Translator</Text>
+                            <View style={styles.headerRow}>
+                                <Text style={styles.title}>Translator</Text>
+                                {(inputText !== '' || translatedText !== '') && (
+                                    <TouchableOpacity onPress={handleClear} style={styles.clearButton}>
+                                        <Trash2 color={theme.colors.textSecondary} size={20} />
+                                    </TouchableOpacity>
+                                )}
+                            </View>
 
                             <LanguageToggle
                                 sourceLanguage={sourceLanguage}
@@ -130,6 +159,7 @@ export const HomeScreen = () => {
                                 )}
                             </TouchableOpacity>
 
+                            {/* Fix 2 usage: Render the string, not the object */}
                             {combinedError && (
                                 <Text style={styles.errorText}>{combinedError}</Text>
                             )}
@@ -169,11 +199,22 @@ const styles = StyleSheet.create({
         flex: 1,
         padding: theme.spacing.l,
     },
+    headerRow: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: theme.spacing.l,
+        marginTop: theme.spacing.s,
+        position: 'relative',
+    },
     title: {
         ...theme.typography.header,
         textAlign: 'center',
-        marginBottom: theme.spacing.l,
-        marginTop: theme.spacing.s,
+    },
+    clearButton: {
+        position: 'absolute',
+        right: 0,
+        padding: 8,
     },
     translateButton: {
         backgroundColor: theme.colors.primary,
