@@ -16,7 +16,6 @@ export const useVoiceRecording = () => {
             setTranscription(null);
 
             if (permissionResponse?.status !== 'granted') {
-                console.log('Requesting permission..');
                 const permission = await requestPermission();
                 if (permission.status !== 'granted') {
                     setError('Permission to access microphone was denied');
@@ -29,8 +28,6 @@ export const useVoiceRecording = () => {
                 playsInSilentModeIOS: true,
             });
 
-            console.log('Starting recording..');
-            console.log('Starting recording..');
             const { recording } = await Audio.Recording.createAsync({
                 android: {
                     extension: '.m4a',
@@ -58,7 +55,6 @@ export const useVoiceRecording = () => {
             });
             setRecording(recording);
             setIsRecording(true);
-            console.log('Recording started');
         } catch (err) {
             console.error('Failed to start recording', err);
             setError('Failed to start recording');
@@ -66,7 +62,6 @@ export const useVoiceRecording = () => {
     };
 
     const stopRecording = async () => {
-        console.log('Stopping recording..');
         setRecording(undefined);
         setIsRecording(false);
 
@@ -75,7 +70,6 @@ export const useVoiceRecording = () => {
         try {
             await recording.stopAndUnloadAsync();
             const uri = recording.getURI();
-            console.log('Recording stopped and stored at', uri);
 
             if (uri) {
                 setIsTranscribing(true);
