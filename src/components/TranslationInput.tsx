@@ -24,6 +24,7 @@ export const TranslationInput: React.FC<TranslationInputProps> = ({
                 placeholderTextColor={theme.colors.textSecondary}
                 multiline
                 textAlignVertical="top"
+                accessibilityLabel="Text input for translation"
             />
         </View>
     );
@@ -32,6 +33,7 @@ export const TranslationInput: React.FC<TranslationInputProps> = ({
 const styles = StyleSheet.create({
     container: {
         marginBottom: theme.spacing.m,
+        flex: 1, // Allow it to expand
     },
     label: {
         ...theme.typography.label,
@@ -44,6 +46,7 @@ const styles = StyleSheet.create({
         borderRadius: theme.borderRadius.l,
         padding: theme.spacing.m,
         fontSize: 18,
+        height: '100%', // Take available space
         minHeight: 120,
         borderWidth: 1,
         borderColor: 'transparent',

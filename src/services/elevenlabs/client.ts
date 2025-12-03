@@ -1,30 +1,24 @@
 import axios from 'axios';
 import * as FileSystem from 'expo-file-system';
 import { Buffer } from 'buffer';
-
-const EXPO_PUBLIC_ELEVENLABS_API_URL = 'https://api.elevenlabs.io/v1/text-to-speech';
-
-// Default voices (you might want to make this configurable)
-// Rachel (American, calm): 21m00Tcm4TlvDq8ikWAM
-// A Japanese voice ID would be ideal if available, otherwise use a generic one or let user pick.
-// For now, we'll use a default one.
-const DEFAULT_VOICE_ID = '21m00Tcm4TlvDq8ikWAM';
+import { AI_CONFIG } from '../../config/ai-config';
 
 export const generateAudio = async (
     text: string,
-    voiceId: string = DEFAULT_VOICE_ID
+    voiceId: string = AI_CONFIG.ELEVENLABS.VOICE_ID
 ): Promise<string> => {
-    const apiKey = process.env.EXPO_PUBLIC_ELEVENLABS_API_KEY;
+    const apiKey = AI_CONFIG.ELEVENLABS.API_KEY;
+    const apiUrl = AI_CONFIG.ELEVENLABS.TTS_URL;
     if (!apiKey) {
         throw new Error('ElevenLabs API key is missing');
     }
 
     try {
         const response = await axios.post(
-            `${EXPO_PUBLIC_ELEVENLABS_API_URL}/${voiceId}`,
+            `${apiUrl}/${voiceId}`,
             {
                 text,
-                model_id: 'eleven_multilingual_v2',
+                model_id: AI_CONFIG.ELEVENLABS.MODEL_ID,
                 voice_settings: {
                     stability: 0.5,
                     similarity_boost: 0.5,

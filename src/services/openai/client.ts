@@ -1,29 +1,29 @@
 import axios from 'axios';
 import { ChatCompletionResponse } from './types';
-
-const EXPO_PUBLIC_OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
+import { AI_CONFIG } from '../../config/ai-config';
 
 export const translateText = async (
     text: string,
     targetLanguage: 'English' | 'Japanese'
 ): Promise<string> => {
-    const apiKey = process.env.EXPO_PUBLIC_OPENAI_API_KEY;
+    const apiKey = AI_CONFIG.OPENAI.API_KEY;
+    const apiUrl = AI_CONFIG.OPENAI.API_URL;
     if (!apiKey) {
         throw new Error('OpenAI API key is missing');
     }
 
-    const systemPrompt = `You are a professional translator. Translate the following text to ${targetLanguage}. Only provide the translation, no explanations.`;
+    const systemPrompt = AI_CONFIG.OPENAI.SYSTEM_PROMPT(targetLanguage);
 
     try {
         const response = await axios.post<ChatCompletionResponse>(
-            EXPO_PUBLIC_OPENAI_API_URL,
+            apiUrl,
             {
-                model: 'gpt-4o-mini',
+                model: AI_CONFIG.OPENAI.MODEL,
                 messages: [
                     { role: 'system', content: systemPrompt },
                     { role: 'user', content: text },
                 ],
-                temperature: 0.3,
+                temperature: AI_CONFIG.OPENAI.TEMPERATURE,
             },
             {
                 headers: {

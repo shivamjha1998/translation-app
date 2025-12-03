@@ -1,39 +1,37 @@
 import axios from 'axios';
-import { Buffer } from 'buffer';
+import { AI_CONFIG } from '../../config/ai-config';
 
-const EXPO_PUBLIC_ELEVENLABS_API_URL = 'https://api.elevenlabs.io/v1/speech-to-text';
+interface RNFile {
+    uri: string;
+    type: string;
+    name: string;
+}
 
 export const transcribeAudio = async (uri: string): Promise<string> => {
-    const apiKey = process.env.EXPO_PUBLIC_ELEVENLABS_API_KEY;
-    if (!apiKey) {
-        throw new Error('ElevenLabs API key is missing');
-    }
+    const apiKey = AI_CONFIG.ELEVENLABS.API_KEY;
+    if (!apiKey) throw new Error('ElevenLabs API key is missing');
 
     const formData = new FormData();
 
-    formData.append('file', {
+    const file: RNFile = {
         uri: uri,
         type: 'audio/m4a',
         name: 'audio.m4a',
-    } as any);
+    };
 
-    formData.append('model_id', 'scribe_v1');
+    formData.append('file', file as unknown as Blob);
+    formData.append('model_id', AI_CONFIG.ELEVENLABS.STT_MODEL_ID);
 
-    try {
-        const response = await axios.post(
-            EXPO_PUBLIC_ELEVENLABS_API_URL,
-            formData,
-            {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                    'xi-api-key': apiKey,
-                },
-            }
-        );
+    const response = await axios.post(
+        AI_CONFIG.ELEVENLABS.STT_URL,
+        formData,
+        {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+                'xi-api-key': apiKey,
+            },
+        }
+    );
 
-        return response.data.text;
-    } catch (error) {
-        console.error('ElevenLabs STT Error:', error);
-        throw error;
-    }
+    return response.data.text;
 };
